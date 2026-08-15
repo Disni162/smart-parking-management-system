@@ -1,0 +1,133 @@
+services:
+  # 0. MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: parking-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: smart_parking_db
+    networks:
+      - parking-network
+
+  # 1. Config Server
+  config-server:
+    build: ./config-server
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    networks:
+      - parking-network
+
+  # 2. Eureka Service Registry
+  service-registry:
+    build: ./service-registry
+    container_name: service-registry
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    depends_on:
+      - config-server
+    networks:
+      - parking-network
+
+  # 3. User Service
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+    restart: on-failure
+    depends_on:
+      - config-server
+      - service-registry
+      - mysql
+    networks:
+      - parking-network
+
+  # 4. Parking Space Service
+  parking-space-service:
+    build: ./parking-space-service
+    container_name: parking-space-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+    restart: on-failure
+    depends_on:
+      - config-server
+      - service-registry
+      - mysql
+    networks:
+      - parking-network
+
+  # 5. Vehicle Service
+  vehicle-service:
+    build: ./vehicle-service
+    container_name: vehicle-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+    restart: on-failure
+    depends_on:
+      - config-server
+      - service-registry
+      - mysql
+    networks:
+      - parking-network
+
+  # 6. Payment Service
+  payment-service:
+    build: ./payment-service
+    container_name: payment-service
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+    restart: on-failure
+    depends_on:
+      - config-server
+      - service-registry
+      - mysql
+    networks:
+      - parking-network
+
+  # 7. API Gateway
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+    restart: on-failure
+    depends_on:
+      - config-server
+      - service-registry
+    networks:
+      - parking-network
+
+networks:
+  parking-network:
+    driver: bridge
