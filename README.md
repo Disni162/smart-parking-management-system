@@ -150,7 +150,7 @@ docker compose down
 ## 📄 Project Resources
 
 * 📮 [Postman Collection](./docs/AD2.postman_collection.json)
-* 📸 [Eureka Dashboard Screenshot](./docs/eureka-dashboard.png)
+* 📸 [Eureka Dashboard Screenshot](./docs/screenshots/eureka_dashboard.png)
 
 
 
