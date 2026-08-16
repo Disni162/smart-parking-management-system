@@ -1,5 +1,6 @@
 package lk.ijse.paymentservice.service;
 
+import lk.ijse.common.exception.BadRequestException;
 import lk.ijse.paymentservice.dto.PaymentReceipt;
 import lk.ijse.paymentservice.dto.PaymentRequest;
 import lk.ijse.paymentservice.entity.Payment;
@@ -17,16 +18,63 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
 
     public PaymentReceipt processPayment(PaymentRequest request) {
-        // Mock Card Validation Logic
-        boolean isValidCard = request.getCardNumber() != null &&
-                request.getCardNumber().length() == 16 &&
-                !request.getCardNumber().startsWith("0000");
 
-        String status = isValidCard ? "SUCCESS" : "FAILED";
-        String txnId = "TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        String lastFour = request.getCardNumber() != null && request.getCardNumber().length() >= 4
-                ? request.getCardNumber().substring(request.getCardNumber().length() - 4)
-                : "XXXX";
+        if (request == null) {
+            throw new BadRequestException(
+                    "Payment request cannot be null"
+            );
+        }
+
+        if (request.getBookingId() == null) {
+            throw new BadRequestException(
+                    "Booking ID cannot be null"
+            );
+        }
+
+        if (request.getUserId() == null) {
+            throw new BadRequestException(
+                    "User ID cannot be null"
+            );
+        }
+
+        if (request.getAmount() == null ||
+                request.getAmount().doubleValue() <= 0) {
+
+            throw new BadRequestException(
+                    "Payment amount must be greater than zero"
+            );
+        }
+
+        if (request.getCardNumber() == null ||
+                request.getCardNumber().isBlank()) {
+
+            throw new BadRequestException(
+                    "Card number cannot be empty"
+            );
+        }
+
+        boolean isValidCard =
+                request.getCardNumber().length() == 16 &&
+                        request.getCardNumber().matches("\\d{16}") &&
+                        !request.getCardNumber().startsWith("0000");
+
+        if (!isValidCard) {
+            throw new BadRequestException(
+                    "Invalid card details"
+            );
+        }
+
+        String txnId = "TXN-" +
+                UUID.randomUUID()
+                        .toString()
+                        .substring(0, 8)
+                        .toUpperCase();
+
+        String lastFour =
+                request.getCardNumber()
+                        .substring(
+                                request.getCardNumber().length() - 4
+                        );
 
         Payment payment = Payment.builder()
                 .bookingId(request.getBookingId())
@@ -34,7 +82,7 @@ public class PaymentService {
                 .amount(request.getAmount())
                 .cardLastFour(lastFour)
                 .transactionId(txnId)
-                .status(status)
+                .status("SUCCESS")
                 .paymentDate(LocalDateTime.now())
                 .build();
 
@@ -45,9 +93,9 @@ public class PaymentService {
                 .bookingId(request.getBookingId())
                 .userId(request.getUserId())
                 .amount(request.getAmount())
-                .status(status)
+                .status("SUCCESS")
                 .paymentDate(payment.getPaymentDate())
-                .message(isValidCard ? "Payment processed successfully" : "Payment failed due to invalid card details")
+                .message("Payment processed successfully")
                 .build();
     }
 }

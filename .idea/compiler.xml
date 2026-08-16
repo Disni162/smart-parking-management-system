@@ -9,6 +9,7 @@
         <module name="config-server" />
         <module name="payment-service" />
         <module name="vehicle-service" />
+        <module name="common" />
         <module name="parking-space-service" />
         <module name="api-gateway" />
         <module name="user-service" />
@@ -19,6 +20,7 @@
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
+      <module name="common" options="-parameters" />
       <module name="config-server" options="-parameters" />
       <module name="parking-space-service" options="-parameters" />
       <module name="payment-service" options="-parameters" />

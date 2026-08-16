@@ -1,5 +1,7 @@
 package lk.ijse.userservice.service;
 
+import lk.ijse.common.exception.BadRequestException;
+import lk.ijse.common.exception.ResourceNotFoundException;
 import lk.ijse.userservice.dto.LoginRequest;
 import lk.ijse.userservice.dto.RegisterRequest;
 import lk.ijse.userservice.dto.UserResponse;
@@ -22,16 +24,12 @@ public class UserService {
 
     public UserResponse registerUser(RegisterRequest request) {
 
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new RuntimeException("Email is required!");
-        }
-
-        if (request.getPassword() == null || request.getPassword().isBlank()) {
-            throw new RuntimeException("Password is required!");
+        if (request == null) {
+            throw new BadRequestException("Registration request cannot be null");
         }
 
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists!");
+            throw new BadRequestException("Email already exists");
         }
 
         User user = User.builder()
@@ -50,30 +48,22 @@ public class UserService {
     public UserResponse loginUser(LoginRequest request) {
 
         if (request == null) {
-            throw new RuntimeException("Login request cannot be null!");
-        }
-
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new RuntimeException("Email is required!");
-        }
-
-        if (request.getPassword() == null || request.getPassword().isBlank()) {
-            throw new RuntimeException("Password is required!");
+            throw new BadRequestException("Login request cannot be null");
         }
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() ->
-                        new RuntimeException("Invalid email or password!"));
+                        new BadRequestException("Invalid email or password"));
 
         if (user.getPassword() == null || user.getPassword().isBlank()) {
-            throw new RuntimeException("User password is not configured!");
+            throw new BadRequestException("Invalid email or password");
         }
 
         if (!passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword())) {
 
-            throw new RuntimeException("Invalid email or password!");
+            throw new BadRequestException("Invalid email or password");
         }
 
         return convertToResponse(user);
@@ -83,12 +73,18 @@ public class UserService {
 
         User user = userRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found with id: " + id));
+                        new ResourceNotFoundException(
+                                "User not found with id: " + id
+                        ));
 
         return convertToResponse(user);
     }
 
     public UserResponse updateUser(Long id, RegisterRequest request) {
+
+        if (request == null) {
+            throw new BadRequestException("Update request cannot be null");
+        }
 
         User user = getUserEntityById(id);
 
@@ -112,7 +108,9 @@ public class UserService {
 
         return userRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found with id: " + id));
+                        new ResourceNotFoundException(
+                                "User not found with id: " + id
+                        ));
     }
 
     private UserResponse convertToResponse(User user) {
