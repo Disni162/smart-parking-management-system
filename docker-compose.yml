@@ -3,14 +3,20 @@ services:
   mysql:
     image: mysql:8.0
     container_name: parking-mysql
-    ports:
-      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: smart_parking_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - parking-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   config-server:
     build: ./config-server
@@ -25,8 +31,15 @@ services:
     networks:
       - parking-network
     restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 
   service-registry:
     build: ./service-registry
@@ -39,7 +52,8 @@ services:
       EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
       EUREKA_CLIENT_FETCH_REGISTRY: "false"
     depends_on:
-      - config-server
+      config-server:
+        condition: service_healthy
     networks:
       - parking-network
     restart: on-failure
@@ -52,15 +66,20 @@ services:
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      DB_USERNAME: root
+      DB_PASSWORD: root
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
     depends_on:
-      - config-server
-      - service-registry
-      - mysql
-    restart: on-failure
+      config-server:
+        condition: service_healthy
+      service-registry:
+        condition: service_started
+      mysql:
+        condition: service_healthy
     networks:
       - parking-network
+    restart: on-failure
 
   vehicle-service:
     build: ./vehicle-service
@@ -70,15 +89,20 @@ services:
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      DB_USERNAME: root
+      DB_PASSWORD: root
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
     depends_on:
-      - config-server
-      - service-registry
-      - mysql
-    restart: on-failure
+      config-server:
+        condition: service_healthy
+      service-registry:
+        condition: service_started
+      mysql:
+        condition: service_healthy
     networks:
       - parking-network
+    restart: on-failure
 
   parking-space-service:
     build: ./parking-space-service
@@ -88,15 +112,20 @@ services:
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      DB_USERNAME: root
+      DB_PASSWORD: root
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
     depends_on:
-      - config-server
-      - service-registry
-      - mysql
-    restart: on-failure
+      config-server:
+        condition: service_healthy
+      service-registry:
+        condition: service_started
+      mysql:
+        condition: service_healthy
     networks:
       - parking-network
+    restart: on-failure
 
   payment-service:
     build: ./payment-service
@@ -106,15 +135,20 @@ services:
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      DB_USERNAME: root
+      DB_PASSWORD: root
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
     depends_on:
-      - config-server
-      - service-registry
-      - mysql
-    restart: on-failure
+      config-server:
+        condition: service_healthy
+      service-registry:
+        condition: service_started
+      mysql:
+        condition: service_healthy
     networks:
       - parking-network
+    restart: on-failure
 
   api-gateway:
     build: ./api-gateway
@@ -127,11 +161,16 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
     depends_on:
-      - config-server
-      - service-registry
-    restart: on-failure
+      config-server:
+        condition: service_healthy
+      service-registry:
+        condition: service_started
     networks:
       - parking-network
+    restart: on-failure
+
+volumes:
+  mysql_data:
 
 networks:
   parking-network:

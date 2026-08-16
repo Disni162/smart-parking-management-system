@@ -10,10 +10,10 @@ spring:
 
   # Docker MySQL Database Configurations
   datasource:
-    url: jdbc:mysql://parking-mysql:3306/smart_parking_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://parking-mysql:3306/parking_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: root
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
