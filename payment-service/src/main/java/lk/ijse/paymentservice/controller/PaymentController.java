@@ -1,5 +1,6 @@
 package lk.ijse.paymentservice.controller;
 
+import jakarta.validation.Valid;
 import lk.ijse.paymentservice.dto.PaymentReceipt;
 import lk.ijse.paymentservice.dto.PaymentRequest;
 import lk.ijse.paymentservice.service.PaymentService;
@@ -15,7 +16,11 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping
-    public ResponseEntity<PaymentReceipt> processPayment(@RequestBody PaymentRequest request) {
-        return ResponseEntity.ok(paymentService.processPayment(request));
+    public ResponseEntity<PaymentReceipt> processPayment(
+            @Valid @RequestBody PaymentRequest request) {
+
+        return ResponseEntity.ok(
+                paymentService.processPayment(request)
+        );
     }
 }
